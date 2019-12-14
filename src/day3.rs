@@ -16,47 +16,85 @@ pub fn input_generator(input: &str) -> Vec<Directions> {
 #[aoc(day3, part1)]
 pub fn solve_part1(input: &[Directions]) -> u32 {
     // println!("parsed input:\n\t{:?}", input);
-
-    // Convert each direction into a path of coordinates that it has traversed.
-    let paths: Vec<Coordinates> = input
-        .iter()
-        .map(|i| directions_into_coordinates(&i))
-        .collect();
-
-    for path in &paths {
-        // println!("path:\n\t{:?}", path);
-    }
-
-    // Load each wire's path into the Map and increment when intersections are found.
-    let mut intersections = HashMap::new();
-    paths[0].iter().for_each(|coordinate| {
-        intersections.insert(coordinate, 0);
-    });
-
-    paths.iter().skip(1).for_each(|path| {
-        path.iter().for_each(|coordinate| {
-            if intersections.contains_key(coordinate) {
-                intersections.insert(coordinate, 1);
-            }
-        });
-    });
-
-    // println!("intersections: {:?}", intersections);
+    let paths = generate_paths(input);
+    let intersections = find_intersections(&paths);
 
     // For each intersection of all wires, calculate the Manhattan Distance.
     let mut distances = intersections
         .iter()
         .filter_map(|(&k, &v)| if v == 1 { Some(k) } else { None })
-        .map(|&k| manhattan_distance(k))
+        .map(manhattan_distance)
         .collect::<Vec<u32>>();
 
     distances.sort();
 
     // println!("distances: {:?}", distances);
 
-    // Take the second-closest intersection, as all paths will have their closest
-    // intersection as the core (0,0).
-    distances[1]
+    // Take the closest intersection.
+    distances[0]
+}
+
+#[aoc(day3, part2)]
+pub fn solve_part2(input: &[Directions]) -> u32 {
+    // println!("parsed input:\n\t{:?}", input);
+    let paths = generate_paths(input);
+    let intersections = find_intersections(&paths);
+
+    let mut shortest_distance = std::u32::MAX;
+    intersections
+        .iter()
+        .filter_map(|(&k, &v)| if v == 1 { Some(k) } else { None })
+        .for_each(|intersection| {
+            let mut total_distance = 0;
+            paths.iter().for_each(|path| {
+                total_distance += path
+                    .iter()
+                    .position(|&coordinate| coordinate == intersection)
+                    .unwrap() as u32;
+            });
+
+            if total_distance < shortest_distance {
+                shortest_distance = total_distance
+            };
+        });
+
+    shortest_distance
+}
+
+fn generate_paths(directions: &[Directions]) -> Vec<Coordinates> {
+    // Convert each direction into a path of coordinates that it has traversed.
+    directions
+        .iter()
+        .map(|i| directions_into_coordinates(&i))
+        .collect()
+}
+
+fn find_intersections(paths: &[Coordinates]) -> HashMap<Coordinate, u32> {
+    /*
+    for path in &paths {
+        println!("path:\n\t{:?}", path);
+    }
+    */
+
+    // Load each wire's path into the Map and mark when intersections are found.
+    let mut intersections: HashMap<Coordinate, u32> = HashMap::new();
+    paths[0].iter().for_each(|coordinate| {
+        intersections.insert(*coordinate, 0);
+    });
+
+    paths.iter().skip(1).for_each(|path| {
+        path.iter().for_each(|coordinate| {
+            if intersections.contains_key(coordinate) {
+                intersections.insert(*coordinate, 1);
+            }
+        });
+    });
+
+    // Remove the origin, it's not really an intersection.
+    intersections.remove(&(0, 0));
+
+    // println!("intersections: {:?}", intersections);
+    intersections
 }
 
 fn directions_into_coordinates(directions: &Directions) -> Vec<Coordinate> {
@@ -179,7 +217,7 @@ mod test_part2 {
     #[test]
     fn example_1() {
         assert_eq!(
-            solve_part1(&mut input_generator(
+            solve_part2(&mut input_generator(
                 "R75,D30,R83,U83,L12,D49,R71,U7,L72\nU62,R66,U55,R34,D71,R55,D58,R83"
             )),
             610
@@ -189,7 +227,7 @@ mod test_part2 {
     #[test]
     fn example_2() {
         assert_eq!(
-            solve_part1(&mut input_generator(
+            solve_part2(&mut input_generator(
                 "R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51\nU98,R91,D20,R16,D67,R40,U7,R15,U6,R7"
             )),
             410
