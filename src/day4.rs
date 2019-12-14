@@ -1,3 +1,17 @@
+/*
+ * Notes:
+ *
+ * Part 1:
+ *  - The double may be at the end of the string, need to handle that last-digit edge case.
+ *
+ * Part 2:
+ *  - Instructions are confusing. Basically, it's OK for there to be larger groups of
+ *  duplicates as long as there is at least 1 group of only 2 dupes.
+ *  - There may be a valid duplicates group followed by an invalid group, so need to remember
+ *  if we saw one before we reset the local duplicate flag.
+ *
+ */
+
 #[aoc_generator(day4)]
 pub fn input_generator(input: &str) -> (u32, u32) {
     let range_list: Vec<u32> = input.split('-').map(|d| d.parse().unwrap()).collect();
